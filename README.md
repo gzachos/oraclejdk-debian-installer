@@ -1,7 +1,8 @@
 oraclejdk-debian-installer
 ============
 
-A Bourne Shell script that will install Oracle® JDK, after you download it from [oracle.com](http://www.oracle.com/technetwork/indexes/downloads/index.html#java).
+A Bourne Shell script that will install Oracle® JDK, after you download it from
+[oracle.com](http://www.oracle.com/technetwork/indexes/downloads/index.html#java).
 
 Operating System
 ----
@@ -52,6 +53,7 @@ Command example:
 ```Shell
 sudo ./installEOracleJDK /home/gzachos/Desktop/
 ```
+
 <br>
 In case more than one '_.tar.gz_' files exist inside the specified directory,
 you will be prompted just like it is shown in the screenshot below, to choose
