@@ -92,7 +92,7 @@ then
 fi
 
 # $FILENUM holds the number of files held in $FILES
-FILENUM=$(echo $FILES | wc -c)
+FILENUM=$(echo $FILES | wc -w)
 
 # If there are more than one files, prompt user to choose one.
 if [ ${FILENUM} -gt 1 ]
