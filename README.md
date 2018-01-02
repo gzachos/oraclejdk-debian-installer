@@ -1,7 +1,7 @@
 oraclejdk-debian-installer
 ============
 
-A Bourne Shell script that will install Oracle® JDK, after you download it from
+A Bourne Shell script that will install Oracle® JDK (see notes below), after you download it from
 [oracle.com](http://www.oracle.com/technetwork/indexes/downloads/index.html#java).
 
 Operating System
@@ -21,10 +21,11 @@ License
 -----
 [GNU GENERAL PUBLIC LICENSE // Version 2, June 1991](LICENSE)
 
-Note
+Notes
 -----
-This script was developed in order to cover personal needs and it is by no mean
+- This script was developed in order to cover personal needs and it is by no mean
 guaranteed to work properly on every system.
+- This script does __not__ currently support installation of __Oracle® JDK 9__!
 
 Execution
 -----
@@ -46,7 +47,7 @@ sudo ./installOracleJDK <absolute-path-of-directory>
 ```
 This way allows you to provide the __absolute__ path of the directory containing
 the '_.tar.gz_' file as a command line argument, in order to override the default
-option. __NOTE that the absolute path should end with a forward slash__ ( __/__ ).
+option. __Note that the absolute path should end with a forward slash__ ( __/__ ).
 <br><br>
 
 Command example:
@@ -54,7 +55,6 @@ Command example:
 sudo ./installEOracleJDK /home/gzachos/Desktop/
 ```
 
-<br>
 In case more than one '_.tar.gz_' files exist inside the specified directory,
 you will be prompted just like it is shown in the screenshot below, to choose
 the one you want to be installed.<br><br>
