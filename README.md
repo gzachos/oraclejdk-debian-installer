@@ -7,11 +7,11 @@ A Bourne Shell script that will install Oracle® JDK (see notes below), after yo
 Operating System
 ----
 LINUX // Debian-based distributions<br>
-(Developed on Linux Mint 18 Sarah)
+(Developed on Linux Mint 18)
 
 Shell
 -----
-- Bourne shell (sh)
+- Bourne Again SHell (Bash)
 
 Developer
 -----
@@ -25,7 +25,7 @@ Notes
 -----
 - This script was developed in order to cover personal needs and it is by no mean
 guaranteed to work properly on every system.
-- This script does __not__ currently support installation of __Oracle® JDK 9__!
+- This script does support installation of __Oracle® JDK 9__!
 
 Execution
 -----

@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #+-----------------------------------------------------------------------+
-#|               Copyright (C) 2015-2016 George Z. Zachos                |
+#|               Copyright (C) 2015-2018 George Z. Zachos                |
 #+-----------------------------------------------------------------------+
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,13 +50,13 @@ if [ -z "${1}" ]
 then
 	# Prompt user to provide a username.
 	# The script is executed as root, so 'whoami' may be invalid.
-	echo -n "Enter your username(<username>@<host>) and press [ENTER]:\n > "
+	echo -en "Enter your username(<username>@<host>) and press [ENTER]:\n > "
 	read USERNAME
 
 	# Check if $USERNAME is empty.
 	if [ -z "${USERNAME}" ]
 	then
-		echo  "\n***ERROR***\nUsername is empty.\nScript will now exit.\n"
+		echo -e "\n***ERROR***\nUsername is empty.\nScript will now exit.\n"
 		exit 1
 	fi
 
@@ -69,7 +69,7 @@ else
 	last_char=$(echo ${DIRPATH} | tail -c 2)
 	if [ "${last_char}" != "/" ]
 	then
-		echo "\n***ERROR***\n${DIRPATH}: Path should end with a '/'.\nScript will now exit.\n"
+		echo -e "\n***ERROR***\n${DIRPATH}: Path should end with a '/'.\nScript will now exit.\n"
 		exit 2
 	fi
 fi
@@ -77,7 +77,7 @@ fi
 # Check if $DIRPATH is a valid directory.
 if [ ! -d "${DIRPATH}" ]
 then
-	echo "\n***ERROR***\n${DIRPATH}: Not a valid directory.\nScript will now exit.\n"
+	echo -e "\n***ERROR***\n${DIRPATH}: Not a valid directory.\nScript will now exit.\n"
 	exit 3
 fi
 
@@ -87,7 +87,7 @@ FILES=$(sudo ls -1 ${DIRPATH} | grep ^jdk- | grep .tar.gz$ | tr "\n" "\n")
 # Check if there are any filenames complying with the previous checks.
 if [ -z "${FILES}" ]
 then
-	echo  "\n***ERROR***\nThere is no '.tar.gz' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
+	echo -e "\n***ERROR***\nThere is no '.tar.gz' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
 	exit 4
 fi
 
@@ -99,7 +99,7 @@ if [ ${FILENUM} -gt 1 ]
 then
 	# The existing files inside $DIRPATH directory are printed one every single line,
 	# including a number/index at the beginning of each line.
-	echo "\nThe following files were found inside \"${DIRPATH}\" directory:"
+	echo -e "\nThe following files were found inside \"${DIRPATH}\" directory:"
 	INDEX=0
 	for file in ${FILES}
 	do
@@ -107,12 +107,12 @@ then
 		INDEX=$((INDEX+1))
 	done
 	# Prompt user to enter the number/index of the file to be installed.
-	echo -n "\nEnter the number/index of the file you want to be installed (0-$((INDEX-1))) and press [ENTER]:\n > "
+	echo -en "\nEnter the number/index of the file you want to be installed (0-$((INDEX-1))) and press [ENTER]:\n > "
 	read CHOICE
 	# if $CHOICE holds a valid number/index, the related filename is assigned to $FILE.
 	if [ ${CHOICE} -lt 0 ] || [ ${CHOICE} -ge ${INDEX} ]
 	then
-		echo  "\n***ERROR***\nInvalid choice!\nScript will now exit.\n"
+		echo -e "\n***ERROR***\nInvalid choice!\nScript will now exit.\n"
 		exit 5
 	fi
 	INDEX=0
@@ -125,7 +125,7 @@ then
 		fi
 		INDEX=$((INDEX+1))
 	done
-	echo "\nChosen file: ${file}\n"
+	echo -e "\nChosen file: ${file}\n"
 	sleep 3
 else
 	# If $FILES holds only one filename, it's value is assigned to $FILE.
@@ -138,70 +138,85 @@ TYPE="$(file -b ${DIRPATH}${FILE} | awk '{print $1}')"
 # Check if the type of $FILE matches "gzip".
 if  [ "${TYPE}" != "gzip" ]
 then
-	echo "\n***ERROR***\nThere is no '.tar.gz.' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
+	echo -e "\n***ERROR***\nThere is no '.tar.gz.' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
 	exit 6
 fi
 
 # If execution reaches this point of the script, it means that there is a valid JDK '.tar.gz'
 # file inside $DIRPATH. The following part of the script is the one that conducts the installation.
 
-# Extract the 'tar.gz' file in the current directory.
-tar -zxvf ${DIRPATH}${FILE}
-X1="$?"
-
 # The 'java' directory is created inside /usr/local/ directory
 sudo mkdir /usr/local/java
+X1="$?"
+
+# Extract the 'tar.gz' file in the current directory.
+tar -zxvf ${DIRPATH}${FILE} -C /usr/local/java
 X2="$?"
 
-# Move the 'java' directory created from the extraction above to /usr/local/java/
-sudo mv ./jdk[0-9].[0-9].* /usr/local/java
-X3="$?"
+JDK_VERSION=$(echo ${FILE} | sed 's/jdk-\(.*\)[-_]linux.*/\1/g')
+JAVA_VERSION=$(echo ${JDK_VERSION:0:1})
+if [ "${x:5:1}" = "." ]
+then
+	JDK_DIR="jdk-${JDK_VERSION}"
+else
+	JDK_UPDATE=$(echo ${JDK_VERSION:2})
+	JDK_DIR=$(ls -1t /usr/local/java | grep "${JDK_UPDATE}" | head -1)
+fi
 
-# $DIRNAME holds the name of the directory created by extracting the JDK ".tar.gz" file
-DIRNAME=$(ls -1 /usr/local/java | tr -d '\n')
-X4="$?"
+JRE_PROFILE_LINES="JRE_HOME=/usr/local/java/$JDK_DIR/jre\nPATH=\$PATH:\$JRE_HOME/bin\nexport JRE_HOME"
+
+if [ ${JAVA_VERSION} -ge 9 ]
+then
+	JRE_PROFILE_LINES=""
+fi
 
 # Updating /etc/profile
-sudo echo -e "######### Oracle JDK #########\nJAVA_HOME=/usr/local/java/$DIRNAME\nPATH=\$PATH:\$HOME/bin:\$JAVA_HOME/bin\nJRE_HOME=/usr/local/java/$DIRNAME/jre\nPATH=\$PATH:\$HOME/bin:\$JRE_HOME/bin\nexport JAVA_HOME\nexport JRE_HOME\nexport PATH" >> /etc/profile
-X5="$?"
+sudo echo -e \
+"######### Oracle JDK #########
+JAVA_HOME=/usr/local/java/$JDK_DIR
+PATH=\$PATH:\$JAVA_HOME/bin
+${JRE_PROFILE_LINES}
+export JAVA_HOME
+export PATH" >> /etc/profile
+X3="$?"
 
 # Updating alternatives
-sudo update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/$DIRNAME/jre/bin/java" 1
+sudo update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/$JDK_DIR/bin/java" 1
+X4="$?"
+sudo update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/java/$JDK_DIR/bin/javac" 1
+X5="$?"
+sudo update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/java/$JDK_DIR/bin/javaws" 1
 X6="$?"
-sudo update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/java/$DIRNAME/bin/javac" 1
+sudo update-alternatives --set java /usr/local/java/$JDK_DIR/bin/java
 X7="$?"
-sudo update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/java/$DIRNAME/bin/javaws" 1
+sudo update-alternatives --set javac /usr/local/java/$JDK_DIR/bin/javac
 X8="$?"
-sudo update-alternatives --set java /usr/local/java/$DIRNAME/jre/bin/java
+sudo update-alternatives --set javaws /usr/local/java/$JDK_DIR/bin/javaws
 X9="$?"
-sudo update-alternatives --set javac /usr/local/java/$DIRNAME/bin/javac
-X10="$?"
-sudo update-alternatives --set javaws /usr/local/java/$DIRNAME/bin/javaws
-X11="$?"
 
 # Changing permissions of the /etc/profile
 sudo chmod 744 /etc/profile
-X12="$?"
+X10="$?"
 
 # Executing /etc/profile
 sudo /etc/profile
-X13="$?"
+X11="$?"
 
-# The exit code of each substantial command is held at the variables from $X1 to $X13.
+# The exit code of each substantial command is held at the variables from $X1 to $X11.
 # If there are no errors, each exit code equals to "0". The sum of all exit codes is held on $SUM.
-SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11+X12+X13))
+SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11))
 
 # Finally, feedback about the installation status is given to the user according to the value of $SUM.
 # Note that in UNIX-like systems, the exit code is represented as an 8-bit unsigned(!) char [1-255].
 if [ "${SUM}" -eq "0" ]
 then
-        echo "\n##################################################################################"
+        echo -e "\n##################################################################################"
         echo   "#                        The installation was successful!                        #"
-        echo   "##################################################################################\n"
+        echo -e  "##################################################################################\n"
         exit 0
 else
-        echo "\n##################################################################################"
+        echo -e "\n##################################################################################"
         echo   "#                      The installation was NOT successful!                      #"
-        echo   "##################################################################################\n"
+        echo -e  "##################################################################################\n"
         exit 7
 fi
