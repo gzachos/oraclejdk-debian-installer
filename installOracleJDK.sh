@@ -162,7 +162,7 @@ DIRNAME=$(ls -1 /usr/local/java | tr -d '\n')
 X4="$?"
 
 # Updating /etc/profile
-sudo echo -e "######### Oracle JDK #########\nJAVA_HOME=/usr/local/java/$DIRNAME\nPATH=\$PATH:\$HOME/bin:\$JAVA_HOME/bin\nJRE_HOME=/usr/local/java/$DIRNAME/jre\nPATH=\$PATH:\$HOME/bin:\$JRE_HOME/bin\nexport JAVA_HOME\nexport JRE_HOME\nexport PATH" >> /etc/profile
+sudo echo -e "######### Oracle JDK #########\nJAVA_HOME=/usr/local/java/$DIRNAME\nJRE_HOME=$JAVA_HOME/jre\nPATH=$PATH:$JRE_HOME/bin:$JAVA_HOME/bin\nexport JAVA_HOME\nexport JRE_HOME\nexport PATH" >> /etc/profile
 X5="$?"
 
 # Updating alternatives
@@ -179,17 +179,13 @@ X10="$?"
 sudo update-alternatives --set javaws /usr/local/java/$DIRNAME/bin/javaws
 X11="$?"
 
-# Changing permissions of the /etc/profile
-sudo chmod 744 /etc/profile
-X12="$?"
-
 # Executing /etc/profile
-sudo /etc/profile
-X13="$?"
+source /etc/profile
+X12="$?"
 
 # The exit code of each substantial command is held at the variables from $X1 to $X13.
 # If there are no errors, each exit code equals to "0". The sum of all exit codes is held on $SUM.
-SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11+X12+X13))
+SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11+X12))
 
 # Finally, feedback about the installation status is given to the user according to the value of $SUM.
 # Note that in UNIX-like systems, the exit code is represented as an 8-bit unsigned(!) char [1-255].
