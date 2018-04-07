@@ -25,6 +25,35 @@
 # 	$ sudo ./installOracleJDK.sh; echo "exit code: $?";
 
 
+# Print error ${2} and exit with ${1} as an exit code.
+perror_exit () {
+	echo -e "\n***ERROR***"
+	echo -e "${2}"
+	echo -e "Script will now exit.\n"
+	exit ${1}
+}
+
+install_set_alternative () {
+	sudo update-alternatives --install "/usr/bin/${1}" "${1}" "/usr/local/java/${JDK_DIR}/bin/${1}" 1
+	EC=$?
+	if [ ${EC} -ne 0 ]
+	then
+		echo -e "\n***WARNING***"
+		echo -e "Could not install \"${1}\" alternative. Exit code of 'update-alternatives': ${EC}.\n"
+		EFLAG=1
+	fi
+
+	sudo update-alternatives --set "${1}" "/usr/local/java/${JDK_DIR}/bin/${1}"
+	EC=$?
+	if [ ${EC} -ne 0 ]
+	then
+		echo -e "\n***WARNING***"
+		echo -e "Could not set \"${1}\" alternative. Exit code of 'update-alternatives': ${EC}."
+		echo -e "Use \"update-alternatives --config ${1}\" to manually configure alternatives.\n"
+		EFLAG=1
+	fi
+}
+
 # An initial message is printed to console.
 echo "##################################################################################"
 echo "#                ***  You are about to install Oracle JDK ***                    #"
@@ -50,14 +79,13 @@ if [ -z "${1}" ]
 then
 	# Prompt user to provide a username.
 	# The script is executed as root, so 'whoami' may be invalid.
-	echo -en "Enter your username(<username>@<host>) and press [ENTER]:\n > "
+	echo -en "Enter your username(<username>@`hostname`) and press [ENTER]:\n > "
 	read USERNAME
 
 	# Check if $USERNAME is empty.
 	if [ -z "${USERNAME}" ]
 	then
-		echo -e "\n***ERROR***\nUsername is empty.\nScript will now exit.\n"
-		exit 1
+		perror_exit 1 "Username is empty."
 	fi
 
 	# $DIRPATH gets the absolute path of the user's 'Downloads' directory assigned.
@@ -68,16 +96,14 @@ else
 	# Check if $DIRPATH ends with a forward slash.
 	if [ "${DIRPATH:(-1)}" != "/" ]
 	then
-		echo -e "\n***ERROR***\n${DIRPATH}: Path should end with a '/'.\nScript will now exit.\n"
-		exit 2
+		perror_exit 2 "${DIRPATH}: Path should end with a '/'."
 	fi
 fi
 
 # Check if $DIRPATH is a valid directory.
 if [ ! -d "${DIRPATH}" ]
 then
-	echo -e "\n***ERROR***\n${DIRPATH}: Not a valid directory.\nScript will now exit.\n"
-	exit 3
+	perror_exit 3 "${DIRPATH}: Not a valid directory."
 fi
 
 # $FILES holds all the filenames inside $DIRPATH directory that begin with 'jdk-' and end with '.tar.gz'.
@@ -86,8 +112,7 @@ FILES=$(sudo ls -1 "${DIRPATH}" | grep ^jdk- | grep .tar.gz$ | tr "\n" "\n")
 # Check if there are any filenames complying with the previous checks.
 if [ -z "${FILES}" ]
 then
-	echo -e "\n***ERROR***\nThere is no '.tar.gz' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
-	exit 4
+	perror_exit 4 "There is no '.tar.gz' file associated with Oracle JDK inside ${DIRPATH} directory."
 fi
 
 # $FILENUM holds the number of files held in $FILES
@@ -112,8 +137,7 @@ then
 	# if $CHOICE holds a valid number/index, the related filename is assigned to $FILE.
 	if [ ${CHOICE} -lt 0 ] || [ ${CHOICE} -ge ${INDEX} ]
 	then
-		echo -e "\n***ERROR***\nInvalid choice!\nScript will now exit.\n"
-		exit 5
+		perror_exit 5 "Invalid choice!"
 	fi
 
 	INDEX=0
@@ -126,8 +150,8 @@ then
 		fi
 		INDEX=$((INDEX+1))
 	done
-	echo -e "\nChosen file: ${file}\n"
-	sleep 3
+	echo -e "\nChosen file: ${FILE}\n"
+	sleep 5
 else
 	# If $FILES holds only one filename, it's value is assigned to $FILE.
 	FILE=${FILES}
@@ -139,24 +163,26 @@ TYPE="$(file -b ${DIRPATH}${FILE})"
 # Check if the type of $FILE matches "gzip".
 if  [ "${TYPE:0:4}" != "gzip" ]
 then
-	echo -e "\n***ERROR***\nThere is no '.tar.gz.' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
-	exit 6
+	perror_exit 6 "There is no '.tar.gz.' file associated with Oracle JDK inside ${DIRPATH} directory."
 fi
 
 # If execution reaches this point of the script, it means that there is a valid JDK '.tar.gz'
 # file inside $DIRPATH. The following part of the script is the one that conducts the installation.
 
 # The 'java' directory is created inside /usr/local/ directory
-X1=0
 if [ ! -d "/usr/local/java" ]
 then
-	sudo mkdir /usr/local/java
-	X1="$?"
+	if ! sudo mkdir /usr/local/java
+	then
+		perror_exit 7 "There was a problem creating \"/usr/local/java/\"."
+	fi
 fi
 
 # Extract the 'tar.gz' file in the current directory.
-sudo tar -zxvf ${DIRPATH}${FILE} -C /usr/local/java
-X2="$?"
+if ! sudo tar -zxvf ${DIRPATH}${FILE} -C /usr/local/java
+then
+	perror_exit 8 "There was a problem exporting \"${DIRPATH}${FILE}\" in \"/usr/local/java/\"."
+fi
 
 JDK_VERSION=$(echo ${FILE} | sed 's/jdk-\(.*\)[-_]linux.*/\1/g')
 JDK_DIR="jdk-${JDK_VERSION}"
@@ -178,37 +204,33 @@ PATH=\$PATH:\$JAVA_HOME/bin
 ${JRE_PROFILE_LINES}
 export JAVA_HOME
 export PATH" >> /etc/profile
-X3="$?"
+
+if [ $? -ne 0 ]
+then
+	perror_exit 9 "Could not update \"/etc/profile\"."
+fi
 
 # Updating alternatives
-sudo update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/${JDK_DIR}/bin/java" 1
-X4="$?"
-sudo update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/java/${JDK_DIR}/bin/javac" 1
-X5="$?"
-sudo update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/java/${JDK_DIR}/bin/javaws" 1
-X6="$?"
-sudo update-alternatives --set java "/usr/local/java/${JDK_DIR}/bin/java"
-X7="$?"
-sudo update-alternatives --set javac "/usr/local/java/${JDK_DIR}/bin/javac"
-X8="$?"
-sudo update-alternatives --set javaws "/usr/local/java/${JDK_DIR}/bin/javaws"
-X9="$?"
+EFLAG=0
+install_set_alternative "java"
+install_set_alternative "javac"
+install_set_alternative "javaws"
 
 # Changing permissions of the /etc/profile
-sudo chmod 744 /etc/profile
-X10="$?"
+if ! sudo chmod 744 /etc/profile
+then
+	perror_exit 10 "Problem changing mode of \"/etc/profile\"."
+fi
 
 # Executing /etc/profile
-sudo /etc/profile
-X11="$?"
+if ! sudo /etc/profile
+then
+	perror_exit 11 "Problem executing \"/etc/profile\"."
+fi
 
-# The exit code of each substantial command is held at the variables from $X1 to $X11.
-# If there are no errors, each exit code equals to "0". The sum of all exit codes is held on $SUM.
-SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11))
-
-# Finally, feedback about the installation status is given to the user according to the value of $SUM.
+# Finally, feedback about the installation status is given to the user according to the value of $EFLAG.
 # Note that in UNIX-like systems, the exit code is represented as an 8-bit unsigned(!) char [1-255].
-if [ "${SUM}" -eq "0" ]
+if [ ${EFLAG} -eq 0 ]
 then
         echo -e "\n##################################################################################"
         echo     "#                        The installation was successful!                        #"
@@ -217,6 +239,7 @@ then
 else
         echo -e "\n##################################################################################"
         echo     "#                      The installation was NOT successful!                      #"
+        echo     "#           One or more alternatives could not be installed and/or set!          #"
         echo -e  "##################################################################################\n"
-        exit 7
+        exit 12
 fi
