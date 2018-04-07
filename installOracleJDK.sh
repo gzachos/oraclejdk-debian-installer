@@ -64,10 +64,9 @@ then
 	DIRPATH="/home/${USERNAME}/Downloads/"
 else
 	# $DIRPATH is assigned the absolute path given as a command line argument.
-	DIRPATH=${1}
+	DIRPATH="${1}"
 	# Check if $DIRPATH ends with a forward slash.
-	last_char=$(echo ${DIRPATH} | tail -c 2)
-	if [ "${last_char}" != "/" ]
+	if [ "${DIRPATH:(-1)}" != "/" ]
 	then
 		echo -e "\n***ERROR***\n${DIRPATH}: Path should end with a '/'.\nScript will now exit.\n"
 		exit 2
@@ -82,7 +81,7 @@ then
 fi
 
 # $FILES holds all the filenames inside $DIRPATH directory that begin with 'jdk-' and end with '.tar.gz'.
-FILES=$(sudo ls -1 ${DIRPATH} | grep ^jdk- | grep .tar.gz$ | tr "\n" "\n")
+FILES=$(sudo ls -1 "${DIRPATH}" | grep ^jdk- | grep .tar.gz$ | tr "\n" "\n")
 
 # Check if there are any filenames complying with the previous checks.
 if [ -z "${FILES}" ]
@@ -92,7 +91,7 @@ then
 fi
 
 # $FILENUM holds the number of files held in $FILES
-FILENUM=$(echo $FILES | wc -w)
+FILENUM=$(echo ${FILES} | wc -w)
 
 # If there are more than one files, prompt user to choose one.
 if [ ${FILENUM} -gt 1 ]
@@ -106,6 +105,7 @@ then
 		echo "[${INDEX}] ${file}"
 		INDEX=$((INDEX+1))
 	done
+
 	# Prompt user to enter the number/index of the file to be installed.
 	echo -en "\nEnter the number/index of the file you want to be installed (0-$((INDEX-1))) and press [ENTER]:\n > "
 	read CHOICE
@@ -115,6 +115,7 @@ then
 		echo -e "\n***ERROR***\nInvalid choice!\nScript will now exit.\n"
 		exit 5
 	fi
+
 	INDEX=0
 	for file in ${FILES}
 	do
@@ -133,10 +134,10 @@ else
 fi
 
 # $TYPE holds the type of the file held in $FILE
-TYPE="$(file -b ${DIRPATH}${FILE} | awk '{print $1}')"
+TYPE="$(file -b ${DIRPATH}${FILE})"
 
 # Check if the type of $FILE matches "gzip".
-if  [ "${TYPE}" != "gzip" ]
+if  [ "${TYPE:0:4}" != "gzip" ]
 then
 	echo -e "\n***ERROR***\nThere is no '.tar.gz.' file associated with Oracle JDK inside ${DIRPATH} directory.\nScript will now exit.\n"
 	exit 6
@@ -146,34 +147,33 @@ fi
 # file inside $DIRPATH. The following part of the script is the one that conducts the installation.
 
 # The 'java' directory is created inside /usr/local/ directory
-sudo mkdir /usr/local/java
-X1="$?"
+X1=0
+if [ ! -d "/usr/local/java" ]
+then
+	sudo mkdir /usr/local/java
+	X1="$?"
+fi
 
 # Extract the 'tar.gz' file in the current directory.
-tar -zxvf ${DIRPATH}${FILE} -C /usr/local/java
+sudo tar -zxvf ${DIRPATH}${FILE} -C /usr/local/java
 X2="$?"
 
 JDK_VERSION=$(echo ${FILE} | sed 's/jdk-\(.*\)[-_]linux.*/\1/g')
-JAVA_VERSION=$(echo ${JDK_VERSION:0:1})
-if [ "${x:5:1}" = "." ]
+JDK_DIR="jdk-${JDK_VERSION}"
+JRE_PROFILE_LINES=""
+
+# Override ${JDK_DIR} and ${JRE_PROFILE_LINES} in case of Java 8
+if [ "${JDK_VERSION:0:2}" = "8u" ]
 then
-	JDK_DIR="jdk-${JDK_VERSION}"
-else
 	JDK_UPDATE=$(echo ${JDK_VERSION:2})
 	JDK_DIR=$(ls -1t /usr/local/java | grep "${JDK_UPDATE}" | head -1)
-fi
-
-JRE_PROFILE_LINES="JRE_HOME=/usr/local/java/$JDK_DIR/jre\nPATH=\$PATH:\$JRE_HOME/bin\nexport JRE_HOME"
-
-if [ ${JAVA_VERSION} -ge 9 ]
-then
-	JRE_PROFILE_LINES=""
+	JRE_PROFILE_LINES="JRE_HOME=/usr/local/java/$JDK_DIR/jre\nPATH=\$PATH:\$JRE_HOME/bin\nexport JRE_HOME"
 fi
 
 # Updating /etc/profile
 sudo echo -e \
 "######### Oracle JDK #########
-JAVA_HOME=/usr/local/java/$JDK_DIR
+JAVA_HOME=/usr/local/java/${JDK_DIR}
 PATH=\$PATH:\$JAVA_HOME/bin
 ${JRE_PROFILE_LINES}
 export JAVA_HOME
@@ -181,17 +181,17 @@ export PATH" >> /etc/profile
 X3="$?"
 
 # Updating alternatives
-sudo update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/$JDK_DIR/bin/java" 1
+sudo update-alternatives --install "/usr/bin/java" "java" "/usr/local/java/${JDK_DIR}/bin/java" 1
 X4="$?"
-sudo update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/java/$JDK_DIR/bin/javac" 1
+sudo update-alternatives --install "/usr/bin/javac" "javac" "/usr/local/java/${JDK_DIR}/bin/javac" 1
 X5="$?"
-sudo update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/java/$JDK_DIR/bin/javaws" 1
+sudo update-alternatives --install "/usr/bin/javaws" "javaws" "/usr/local/java/${JDK_DIR}/bin/javaws" 1
 X6="$?"
-sudo update-alternatives --set java /usr/local/java/$JDK_DIR/bin/java
+sudo update-alternatives --set java "/usr/local/java/${JDK_DIR}/bin/java"
 X7="$?"
-sudo update-alternatives --set javac /usr/local/java/$JDK_DIR/bin/javac
+sudo update-alternatives --set javac "/usr/local/java/${JDK_DIR}/bin/javac"
 X8="$?"
-sudo update-alternatives --set javaws /usr/local/java/$JDK_DIR/bin/javaws
+sudo update-alternatives --set javaws "/usr/local/java/${JDK_DIR}/bin/javaws"
 X9="$?"
 
 # Changing permissions of the /etc/profile
@@ -211,12 +211,12 @@ SUM=$((X1+X2+X3+X4+X5+X6+X7+X8+X9+X10+X11))
 if [ "${SUM}" -eq "0" ]
 then
         echo -e "\n##################################################################################"
-        echo   "#                        The installation was successful!                        #"
+        echo     "#                        The installation was successful!                        #"
         echo -e  "##################################################################################\n"
         exit 0
 else
         echo -e "\n##################################################################################"
-        echo   "#                      The installation was NOT successful!                      #"
+        echo     "#                      The installation was NOT successful!                      #"
         echo -e  "##################################################################################\n"
         exit 7
 fi
