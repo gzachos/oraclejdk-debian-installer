@@ -1,8 +1,9 @@
 oraclejdk-debian-installer
 ============
 
-A Bourne Shell script that will install Oracle® JDK (see notes below), after you download it from
-[oracle.com](http://www.oracle.com/technetwork/indexes/downloads/index.html#java).
+A Bash Shell script that will install Oracle® Java SE JDK (see notes below),
+after you download it from
+[oracle.com](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
 
 Operating System
 ----
@@ -25,7 +26,10 @@ Notes
 -----
 - This script was developed in order to cover personal needs and it is by no mean
 guaranteed to work properly on every system.
-- This script does support installation of __Oracle® JDK 9__!
+- This script does support installation of __Oracle® JDK 9__ and __Oracle® JDK 10__!
+- Oracle® has proposed a new version scheme for Oracle® based builds (YY.M) starting
+  in March, 2018. __Java SE 10 (18.3)__  will be a short term release and users should
+  transition to the next release when available.
 
 Execution
 -----
