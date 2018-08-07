@@ -1,29 +1,23 @@
-oraclejdk-debian-installer
-============
+# oraclejdk-debian-installer
 
 A Bash Shell script that will install Oracle® Java SE JDK (see notes below),
 after you download it from
 [oracle.com](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
 
-Operating System
-----
+## Operating System
 LINUX // Debian-based distributions<br>
 (Developed on Linux Mint 18)
 
-Shell
------
+## Shell
 - Bourne Again SHell (Bash)
 
-Developer
------
-George Z. Zachos
+## Developer
+[George Z. Zachos](http://cse.uoi.gr/~gzachos)
 
-License
------
-[GNU GENERAL PUBLIC LICENSE // Version 2, June 1991](LICENSE)
+## License
+[GNU GENERAL PUBLIC LICENSE Version 2, June 1991](LICENSE)
 
-Notes
------
+## Notes
 - This script was developed in order to cover personal needs and it is by no mean
 guaranteed to work properly on every system.
 - This script does support installation of __Oracle® JDK 9__ and __Oracle® JDK 10__!
@@ -31,8 +25,7 @@ guaranteed to work properly on every system.
   in March, 2018. __Java SE 10 (18.3)__  will be a short term release and users should
   transition to the next release when available.
 
-Execution
------
+## Execution
 There are two ways that you can execute this script.
 
  * __1st way__:
@@ -47,11 +40,11 @@ script to enter /home/_username_/Downloads/ and search for the file to be instal
 
  * __2nd way__:
 ```Shell
-sudo ./installOracleJDK <absolute-path-of-directory>
+sudo ./installOracleJDK [absolute-path-of-directory]
 ```
 This way allows you to provide the __absolute__ path of the directory containing
 the '_.tar.gz_' file as a command line argument, in order to override the default
-option. __Note that the absolute path should end with a forward slash__ ( __/__ ).
+option.
 <br><br>
 
 Command example:

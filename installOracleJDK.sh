@@ -93,10 +93,15 @@ then
 else
 	# $DIRPATH is assigned the absolute path given as a command line argument.
 	DIRPATH="${1}"
-	# Check if $DIRPATH ends with a forward slash.
+	# Check if $DIRPATH is an absolute path.
+	if [ "${DIRPATH:0:1}" != "/" ]
+	then
+		perror_exit 2 "${DIRPATH}: Should be an absolute path."
+	fi
+	# Append a trailing "/" if needed.
 	if [ "${DIRPATH:(-1)}" != "/" ]
 	then
-		perror_exit 2 "${DIRPATH}: Path should end with a '/'."
+		DIRPATH="${DIRPATH}/"
 	fi
 fi
 
