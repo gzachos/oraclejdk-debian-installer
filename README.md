@@ -30,7 +30,7 @@ There are two ways that you can execute this script.
 
  * __1st way__:
 ```Shell
-sudo ./installOracleJDK
+sudo ./installOracleJDK.sh
 ```
 In order to use this way, you have to download the '_.tar.gz_' file of
 your choice from _oracle.com_ and save it inside the __Downloads__ directory of
@@ -40,7 +40,7 @@ script to enter /home/_username_/Downloads/ and search for the file to be instal
 
  * __2nd way__:
 ```Shell
-sudo ./installOracleJDK [absolute-path-of-directory]
+sudo ./installOracleJDK.sh [absolute-path-of-directory]
 ```
 This way allows you to provide the __absolute__ path of the directory containing
 the '_.tar.gz_' file as a command line argument, in order to override the default
